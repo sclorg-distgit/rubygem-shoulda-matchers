@@ -1,12 +1,17 @@
 %{?scl:%scl_package rubygem-%{gem_name}}
 %{!?scl:%global pkg_name %{name}}
 
+# Fallback to rh-nodejs4 rh-nodejs4-scldevel is probably not available in
+# the buildroot.
+%{!?scl_nodejs:%global scl_nodejs rh-nodejs4}
+%{!?scl_prefix_nodejs:%global scl_prefix_nodejs %{scl_nodejs}-}
+
 # Generated from shoulda-matchers-2.6.1.gem by gem2rpm -*- rpm-spec -*-
 %global gem_name shoulda-matchers
 
 Name: %{?scl_prefix}rubygem-%{gem_name}
 Version: 2.8.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 Summary: Making tests easy on the fingers and eyes
 Group: Development/Languages
 License: MIT
@@ -34,13 +39,14 @@ BuildRequires: %{?scl_prefix}rubygem(spring)
 BuildRequires: %{?scl_prefix}rubygem(sqlite3)
 BuildRequires: %{?scl_prefix}rubygem(turbolinks)
 BuildRequires: %{?scl_prefix}rubygem(uglifier)
-# Dependencies missing
-#BuildRequires: %{?scl_prefix}rubygem(web-console)
-#BuildRequires: %{?scl_prefix}rubygem(activeresource)
-#BuildRequires: %{?scl_prefix}rubygem(protected_attributes)
-#BuildRequires: %{?scl_prefix}rubygem(rspec-rails)
+BuildRequires: %{?scl_prefix}rubygem(web-console)
+BuildRequires: %{?scl_prefix}rubygem(activeresource)
+BuildRequires: %{?scl_prefix}rubygem(protected_attributes)
+BuildRequires: %{?scl_prefix}rubygem(rspec-rails)
 BuildArch:     noarch
 Provides:      %{?scl_prefix}rubygem(%{gem_name}) = %{version}
+
+BuildRequires: %{?scl_prefix_nodejs}nodejs
 
 %description
 shoulda-matchers provides Test::Unit- and RSpec-compatible one-liners that
@@ -112,19 +118,15 @@ sed -i '/active_record_can_raise_range_error?/ a\      return false' spec/suppor
 sed -i 's/double.expects/allow(double).to receive/' spec/unit/shoulda/matchers/doublespeak/stub_implementation_spec.rb
 
 %{?scl:scl enable %{scl} - << \EOF}
-# Dependencies are missing, therefore tests cannot be run
-#bundle exec rspec spec/unit
+bundle exec rspec spec/unit
 %{?scl:EOF}
 
 # minitest-reporters is not available in Fedora yet.
 mv spec/acceptance/independent_matchers_spec.rb{,.disabled}
 
 # JS runtime is needed.
-sed -i "/bundle.remove_gem 'uglifier'/ a\        bundle.add_gem 'therubyracer'" spec/support/acceptance/helpers/step_helpers.rb
-
-%{?scl:scl enable %{scl} - << \EOF}
-# Dependencies are missing, therefore tests cannot be run
-#bundle exec rspec spec/acceptance
+%{?scl:scl enable %{scl} %{scl_nodejs} - << \EOF}
+bundle exec rspec spec/acceptance
 %{?scl:EOF}
 
 popd
@@ -157,6 +159,10 @@ popd
 %{gem_instdir}/tasks
 
 %changelog
+* Thu Apr 07 2016 Pavel Valena <pvalena@redhat.com> - 2.8.0-4
+- Add missing dependencies to BuildRequires
+- Enable tests
+
 * Wed Mar 02 2016 Pavel Valena <pvalena@redhat.com> - 2.8.0-3
 - Add scl macros
 
